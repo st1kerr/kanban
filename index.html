@@ -997,11 +997,13 @@
     <div class="step-block"><strong>3.</strong> Добавь технарей ниже.</div>
     <div style="margin-top:24px;">
       <div class="modal-section-title">Добавить технаря</div>
-      <div class="row-grid-2" style="margin-bottom:8px;">
-        <input type="text" class="input" id="onbName" placeholder="Имя">
-        <input type="text" class="input" id="onbProjects" placeholder="Проекты через запятую">
+      <div style="margin-bottom:8px;">
+        <input type="text" class="input" id="onbName" placeholder="Имя, напр. Женя">
       </div>
-      <input type="text" class="input" id="onbUrl" placeholder="URL Apps Script Web App">
+      <input type="text" class="input" id="onbUrl" placeholder="URL Apps Script Web App (https://script.google.com/macros/s/...)">
+      <p style="font-size:12px; color:#8b8b85; margin:6px 0 10px;">
+        Проекты подтянутся из таблицы автоматически — вводить не нужно.
+      </p>
       <div style="display:flex; gap:8px; margin-top:10px;">
         <button class="btn btn-primary" id="onbAdd" style="flex:1;">Проверить и добавить</button>
       </div>
@@ -1178,10 +1180,12 @@
         <div class="modal-section-title">Добавить технаря</div>
         <div class="row-grid-2" style="margin-bottom:8px;">
           <input type="text" class="input" id="newTechName" placeholder="Имя">
-          <input type="text" class="input" id="newTechProjects" placeholder="Проекты через запятую">
+          <input type="text" class="input" id="newTechUrl" placeholder="URL Apps Script Web App">
         </div>
-        <input type="text" class="input" id="newTechUrl" placeholder="URL Apps Script Web App">
-        <button class="btn btn-primary" id="addTech" style="margin-top:8px;">Проверить и добавить</button>
+        <p style="font-size:12px; color:#8b8b85; margin:0 0 8px;">
+          Проекты подтянутся из таблицы автоматически при добавлении.
+        </p>
+        <button class="btn btn-primary" id="addTech">Проверить и добавить</button>
         <div id="addTechStatus" style="margin-top:8px; font-size:12px;"></div>
       </div>
       <div id="techList"></div>
@@ -1306,7 +1310,13 @@ function initials(name) {
 function findTechByProject(project) {
   if (!project) return null;
   const p = String(project).toLowerCase();
-  return techs.find(t => t.projects.some(pr => pr.toLowerCase() === p)) || null;
+  // 1) Сначала ищем по явной привязке (tech.projects)
+  const explicit = techs.find(t => t.projects.some(pr => pr.toLowerCase() === p));
+  if (explicit) return explicit;
+  // 2) Fallback: смотрим в существующих задачах — если у этого проекта есть техник, берём его
+  const task = tasks.find(t => t.project && t.project.toLowerCase() === p && t.techId);
+  if (task) return getTech(task.techId) || null;
+  return null;
 }
 function getTech(id) { return techs.find(t => t.id === id); }
 
@@ -1454,15 +1464,25 @@ let acIndex = -1;
 let acRange = null;
 
 function getAllProjectsWithTechs() {
-  const map = new Map();
+  const map = new Map(); // name → Set<techId>
+  // Из явных привязок (tech.projects)
   techs.forEach(t => {
     t.projects.forEach(p => {
-      const key = p;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(t);
+      if (!map.has(p)) map.set(p, new Set());
+      map.get(p).add(t.id);
     });
   });
-  return Array.from(map.entries()).map(([name, techList]) => ({ name, techs: techList }));
+  // Из задач (на случай если в tech.projects нет, но задачи по проекту есть)
+  tasks.forEach(task => {
+    if (task.project && task.techId) {
+      if (!map.has(task.project)) map.set(task.project, new Set());
+      map.get(task.project).add(task.techId);
+    }
+  });
+  return Array.from(map.entries()).map(([name, techIds]) => ({
+    name,
+    techs: Array.from(techIds).map(id => getTech(id)).filter(Boolean)
+  }));
 }
 
 function findHashTokenAtCursor(input) {
@@ -1600,10 +1620,16 @@ async function reloadTasks() {
   const allTasks = [];
   let errors = 0;
   let firstVersion = null;
+  let techsUpdated = false;
   results.forEach((r, i) => {
     if (r.status === 'fulfilled' && r.value.data.ok) {
       const tech = r.value.tech;
       if (r.value.data.version && !firstVersion) firstVersion = r.value.data.version;
+      // Обновляем проекты из таблицы — источник правды в Sheets, не в localStorage
+      if (Array.isArray(r.value.data.projects)) {
+        tech.projects = r.value.data.projects;
+        techsUpdated = true;
+      }
       r.value.data.tasks.forEach(task => {
         allTasks.push({ ...task, techId: tech.id, synced: true });
       });
@@ -1612,6 +1638,7 @@ async function reloadTasks() {
       console.error('Failed to load tech', techs[i].name, r);
     }
   });
+  if (techsUpdated) saveTechs(); // Сохраняем обновлённые проекты
   tasks = allTasks;
   if (firstVersion) serverVersion = firstVersion;
   updateVersionFooter();
@@ -1806,6 +1833,14 @@ async function createTask(taskData, techId) {
     const res = await apiPost(tech.url, { action: 'add', task: taskData });
     if (!res.ok) throw new Error(res.error);
     tasks.push({ ...taskData, id: res.id, techId, synced: true });
+
+    // Если проект новый для этого технаря — авто-зарегистрируем в Справочниках
+    if (taskData.project && !tech.projects.includes(taskData.project)) {
+      tech.projects.push(taskData.project);
+      saveTechs();
+      apiPost(tech.url, { action: 'updateProjects', projects: tech.projects }).catch(() => {});
+    }
+
     setSync('idle');
     renderActive();
     toast('Добавлено: ' + tech.name);
@@ -2369,16 +2404,21 @@ function renderTechSettings() {
   });
 }
 
-async function testAndAddTech(name, url, projects, statusEl) {
+async function testAndAddTech(name, url, statusEl) {
   if (!name || !url) { statusEl.innerHTML = '<span style="color:#c0392b;">Заполни имя и URL</span>'; return false; }
-  statusEl.innerHTML = '<span style="color:#5f5e5a;">Проверяю...</span>';
+  statusEl.innerHTML = '<span style="color:#5f5e5a;">Проверяю соединение...</span>';
   try {
     const r = await apiGet(url);
     if (!r.ok) throw new Error(r.error || 'Не ответил ok');
-    techs.push({ id: uid(), name, url, projects });
+    // Проекты берём прямо из таблицы — не надо вводить руками
+    const projects = (r.projects && r.projects.length > 0) ? r.projects : [];
+    const tech = { id: uid(), name, url, projects };
+    techs.push(tech);
     saveTechs();
-    try { await apiPost(url, { action: 'updateProjects', projects }); } catch(e) {}
-    statusEl.innerHTML = '<span style="color:#5fa463;">✓ ' + escapeHtml(name) + ' добавлен (' + r.tasks.length + ' задач загружено)</span>';
+    const projInfo = projects.length > 0
+      ? ' · ' + projects.length + ' проектов из таблицы'
+      : ' · проектов пока нет';
+    statusEl.innerHTML = '<span style="color:#5fa463;">✓ ' + escapeHtml(name) + ' добавлен (' + r.tasks.length + ' задач' + projInfo + ')</span>';
     return true;
   } catch (err) {
     statusEl.innerHTML = '<span style="color:#c0392b;">Ошибка: ' + escapeHtml(err.message) + '</span>';
@@ -2389,11 +2429,9 @@ async function testAndAddTech(name, url, projects, statusEl) {
 document.getElementById('addTech').addEventListener('click', async () => {
   const name = document.getElementById('newTechName').value.trim();
   const url = document.getElementById('newTechUrl').value.trim();
-  const projects = document.getElementById('newTechProjects').value.split(',').map(p => p.trim()).filter(Boolean);
-  if (await testAndAddTech(name, url, projects, document.getElementById('addTechStatus'))) {
+  if (await testAndAddTech(name, url, document.getElementById('addTechStatus'))) {
     document.getElementById('newTechName').value = '';
     document.getElementById('newTechUrl').value = '';
-    document.getElementById('newTechProjects').value = '';
     renderTechSettings();
     renderTechFilters();
     reloadTasks();
@@ -3095,12 +3133,10 @@ document.querySelectorAll('.modal-bg').forEach(bg => {
 document.getElementById('onbAdd').addEventListener('click', async () => {
   const name = document.getElementById('onbName').value.trim();
   const url = document.getElementById('onbUrl').value.trim();
-  const projects = document.getElementById('onbProjects').value.split(',').map(p => p.trim()).filter(Boolean);
   const status = document.getElementById('onbStatus');
-  if (await testAndAddTech(name, url, projects, status)) {
+  if (await testAndAddTech(name, url, status)) {
     document.getElementById('onbName').value = '';
     document.getElementById('onbUrl').value = '';
-    document.getElementById('onbProjects').value = '';
     renderOnbList();
   }
 });
