@@ -20,7 +20,7 @@
     display: flex;
     gap: 8px;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 4px;
   }
   .view-tabs {
     display: flex;
@@ -29,9 +29,12 @@
     border-radius: 10px;
     padding: 3px;
     gap: 2px;
+    height: 42px;
+    align-items: center;
   }
   .view-tab {
-    padding: 8px 14px;
+    padding: 0 14px;
+    height: 36px;
     background: none;
     border: none;
     border-radius: 7px;
@@ -47,7 +50,8 @@
   .quick-add-wrap { flex: 1; position: relative; }
   .quick-add {
     width: 100%;
-    padding: 12px 14px;
+    height: 42px;
+    padding: 0 14px;
     font-size: 15px;
     background: #fff;
     border: 1px solid rgba(0,0,0,0.12);
@@ -60,15 +64,16 @@
     box-shadow: 0 0 0 3px rgba(217,119,87,0.12);
   }
   .preview {
-    margin-top: 6px;
     font-size: 12px;
     color: #5f5e5a;
-    padding: 0 4px;
-    min-height: 18px;
+    min-height: 22px;
+    padding: 2px 4px 8px;
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
   }
+  .preview:empty { padding-bottom: 0; min-height: 0; }
   .preview .chip {
     background: #f1efe8;
     padding: 2px 8px;
@@ -119,6 +124,22 @@
     border-top: 1px solid rgba(0,0,0,0.05);
     margin-top: 4px;
   }
+
+  .btn-new-task {
+    height: 42px;
+    padding: 0 18px;
+    background: #d97757;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .btn-new-task:hover { background: #c66740; }
 
   .icon-btn {
     width: 42px; height: 42px;
@@ -251,15 +272,17 @@
   /* Sort controls списка */
   .list-controls {
     display: flex;
-    gap: 8px;
+    gap: 14px;
     align-items: center;
     margin-bottom: 6px;
     font-size: 12px;
     color: #8b8b85;
     flex-wrap: wrap;
   }
+  .list-controls > span { color: #8b8b85; }
   .list-controls select {
-    padding: 4px 8px;
+    height: 30px;
+    padding: 0 8px;
     border: 1px solid rgba(0,0,0,0.10);
     border-radius: 6px;
     background: #fff;
@@ -269,6 +292,27 @@
     outline: none;
     cursor: pointer;
   }
+  .list-controls-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .list-status-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 9px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.10);
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #5f5e5a;
+    user-select: none;
+  }
+  .list-status-check input { accent-color: #d97757; margin: 0; }
+  .list-status-check:hover { border-color: rgba(0,0,0,0.25); }
+  .list-status-check.off { opacity: 0.4; }
 
   /* Footer с версией */
   .footer-version {
@@ -595,14 +639,55 @@
   .list-group.collapsed .list-group-body { display: none; }
   .list-row {
     display: grid;
-    grid-template-columns: 24px 1fr 140px 180px 130px 120px;
-    gap: 10px;
+    grid-template-columns: 24px 1fr 80px 150px 110px 150px 120px 110px;
+    gap: 8px;
     padding: 11px 14px;
     align-items: center;
     border-bottom: 1px solid rgba(0,0,0,0.04);
     font-size: 13px;
     transition: background 0.1s;
   }
+  .list-head-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 80px 150px 110px 150px 120px 110px;
+    gap: 8px;
+    padding: 9px 14px;
+    background: #fafaf8;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8b8b85;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .list-head-cell {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .list-head-cell:hover { color: #1a1a19; }
+  .list-head-cell.active { color: #d97757; }
+  .list-head-cell .sort-arrow {
+    opacity: 0.3;
+    font-size: 10px;
+  }
+  .list-head-cell.active .sort-arrow { opacity: 1; }
+  .list-cell-created { color: #5f5e5a; font-size: 12px; }
+  .list-prio-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .list-prio-pill.h { background: #fcebeb; color: #a32d2d; }
+  .list-prio-pill.m { background: #faeeda; color: #854f0b; }
+  .list-prio-pill.l { background: #e6f4e8; color: #1f6d35; }
   .list-row:last-child { border-bottom: none; }
   .list-row:hover { background: #faf9f5; }
   .list-row.selected { background: #f1efe8; }
@@ -1025,12 +1110,12 @@
       <button class="view-tab" data-view="list">Список</button>
       <button class="view-tab" data-view="stats">Статистика</button>
     </div>
+    <button class="btn-new-task" id="newTaskBtn" title="Создать задачу подробно">+ Задача</button>
     <div class="quick-add-wrap">
       <input type="text" id="quickAdd" class="quick-add"
         placeholder="Задача и Enter. Например: Сверстать главную #Металка !! @пятница"
         autocomplete="off">
       <div class="autocomplete" id="autocomplete"></div>
-      <div id="preview" class="preview"></div>
     </div>
     <div class="sync-status" id="syncStatus">
       <span class="sync-dot" id="syncDot"></span>
@@ -1041,6 +1126,8 @@
     <button class="icon-btn" id="projectsBtn" title="Проекты">📁</button>
     <button class="icon-btn" id="settingsBtn" title="Настройки">⚙</button>
   </div>
+
+  <div id="preview" class="preview"></div>
 
   <!-- BOARD VIEW -->
   <div id="viewBoard">
@@ -1234,7 +1321,7 @@
 
 <script>
 // =================== STATE ===================
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const STORE_KEY = 'kanban-techs-v2';
 const FILTERS_KEY = 'kanban-view-filters-v1';
 const LISTPREFS_KEY = 'kanban-list-prefs-v1';
@@ -1267,11 +1354,22 @@ try {
 function saveFilters() { localStorage.setItem(FILTERS_KEY, JSON.stringify(viewFilters)); }
 function curFilters() { return viewFilters[currentView] || viewFilters.board; }
 
-// Настройки списка и доски: группировка и сортировка
-let listPrefs = { groupBy: 'project', sortBy: 'deadline', boardSortBy: 'priority' };
+// Настройки списка и доски: группировка, сортировка, видимость статусов
+let listPrefs = {
+  groupBy: 'project',
+  sortBy: 'deadline',
+  sortDir: 'asc',
+  boardSortBy: 'priority',
+  statusFilter: { 'В работе': true, 'Выполнено': true, 'Отменена': true }
+};
 try {
   const raw = localStorage.getItem(LISTPREFS_KEY);
-  if (raw) listPrefs = { ...listPrefs, ...JSON.parse(raw) };
+  if (raw) {
+    const parsed = JSON.parse(raw);
+    listPrefs = { ...listPrefs, ...parsed };
+    // Гарантируем что statusFilter — объект с тремя ключами
+    listPrefs.statusFilter = { 'В работе': true, 'Выполнено': true, 'Отменена': true, ...(parsed.statusFilter || {}) };
+  }
 } catch(e) {}
 function saveListPrefs() { localStorage.setItem(LISTPREFS_KEY, JSON.stringify(listPrefs)); }
 
@@ -1611,9 +1709,9 @@ function toast(msg, isError) {
 }
 
 // =================== LOAD ===================
-async function reloadTasks() {
+async function reloadTasks(silent = false) {
   if (techs.length === 0) { tasks = []; renderActive(); return; }
-  setSync('syncing');
+  if (!silent) setSync('syncing');
   const results = await Promise.allSettled(
     techs.map(t => apiGet(t.url).then(r => ({tech: t, data: r})))
   );
@@ -1644,7 +1742,7 @@ async function reloadTasks() {
   updateVersionFooter();
   if (errors > 0) {
     setSync('error', errors + ' с ошибкой');
-    toast('Не удалось загрузить ' + errors + ' таблиц', true);
+    if (!silent) toast('Не удалось загрузить ' + errors + ' таблиц', true);
   } else {
     setSync('idle');
   }
@@ -2142,6 +2240,40 @@ document.addEventListener('click', () => {
 });
 
 // =================== TASK MODAL ===================
+function openNewTaskModal() {
+  currentEditTaskId = null; // признак "новая задача"
+
+  document.getElementById('editTitle').value = '';
+
+  // Технарь — пустой по умолчанию
+  const techSel = document.getElementById('editTech');
+  techSel.innerHTML = '<option value="">— выбери —</option>' +
+    techs.map(t => '<option value="' + t.id + '">' + escapeHtml(t.name) + '</option>').join('');
+
+  // Все известные проекты
+  const allP = new Set();
+  techs.forEach(t => t.projects.forEach(p => allP.add(p)));
+  tasks.forEach(t => { if (t.project) allP.add(t.project); });
+  const projSel = document.getElementById('editProject');
+  projSel.innerHTML = '<option value="">— нет —</option>' +
+    Array.from(allP).sort().map(p =>
+      '<option value="' + escapeHtml(p) + '">' + escapeHtml(p) + '</option>'
+    ).join('');
+
+  // Сброс приоритета, дедлайна, статуса, примечания
+  document.querySelectorAll('#taskModal .priority-select .filter-chip').forEach(b => b.classList.remove('active'));
+  document.getElementById('editDeadline').value = '';
+  document.getElementById('editStatus').value = 'В работе';
+  document.getElementById('editNote').value = '';
+
+  // Меняем заголовок и скрываем кнопку удаления
+  document.querySelector('#taskModal h2').textContent = 'Новая задача';
+  document.getElementById('deleteTask').style.display = 'none';
+
+  document.getElementById('taskModal').classList.add('active');
+  setTimeout(() => document.getElementById('editTitle').focus(), 50);
+}
+
 function openTaskModal(id, techId) {
   const task = tasks.find(t => String(t.id) === String(id) && t.techId === techId);
   if (!task) return;
@@ -2162,6 +2294,11 @@ function openTaskModal(id, techId) {
   document.getElementById('editDeadline').value = task.deadline || '';
   document.getElementById('editStatus').value = task.status || 'В работе';
   document.getElementById('editNote').value = task.note || '';
+
+  // Заголовок и кнопка удаления — для редактирования
+  document.querySelector('#taskModal h2').textContent = 'Задача';
+  document.getElementById('deleteTask').style.display = '';
+
   document.getElementById('taskModal').classList.add('active');
 }
 
@@ -2181,6 +2318,28 @@ document.getElementById('editProject').addEventListener('change', e => {
 });
 
 document.getElementById('saveTask').addEventListener('click', async () => {
+  // === Создание новой задачи (через большую кнопку) ===
+  if (currentEditTaskId === null) {
+    const techId = document.getElementById('editTech').value;
+    const title = document.getElementById('editTitle').value.trim();
+    if (!title) { toast('Заполни название', true); return; }
+    if (!techId) { toast('Выбери технаря или проект', true); return; }
+
+    const activePrio = document.querySelector('#taskModal .priority-select .filter-chip.active');
+    const newTask = {
+      title,
+      project: document.getElementById('editProject').value || '',
+      priority: activePrio ? activePrio.dataset.prio : '',
+      deadline: document.getElementById('editDeadline').value || '',
+      status: document.getElementById('editStatus').value || 'В работе',
+      note: document.getElementById('editNote').value || ''
+    };
+    document.getElementById('taskModal').classList.remove('active');
+    await createTask(newTask, techId);
+    return;
+  }
+
+  // === Редактирование существующей ===
   const [oldId, oldTechId] = currentEditTaskId.split('|');
   const task = tasks.find(t => String(t.id) === String(oldId) && t.techId === oldTechId);
   if (!task) return;
@@ -2439,6 +2598,7 @@ document.getElementById('addTech').addEventListener('click', async () => {
 });
 
 document.getElementById('refreshBtn').addEventListener('click', () => reloadTasks());
+document.getElementById('newTaskBtn').addEventListener('click', () => openNewTaskModal());
 
 // =================== WEEKLY REPORT ===================
 function generateWeeklyReport() {
@@ -2585,26 +2745,39 @@ try { collapsedGroups = JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '[]');
 
 function saveCollapsed() { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsedGroups)); }
 
-// Формат даты для списка: "- 2 месяца" / "- 5 дней" / "вчера" / "сегодня" / "завтра" / "через 3 дня" / "15.05"
+// Формат даты для списка: "сегодня" / "завтра 16.05" / "через 3д 18.05" / "вчера 14.05" / "- 2 мес. 12.03"
 function formatDeadlineList(iso) {
   if (!iso) return { text: '—', cls: 'none' };
   const d = new Date(iso);
   const today = new Date(); today.setHours(0,0,0,0);
   const diff = Math.round((d - today) / 86400000);
-
-  if (diff === 0) return { text: 'сегодня', cls: 'today' };
-  if (diff === 1) return { text: 'завтра', cls: 'future' };
-  if (diff === -1) return { text: 'вчера', cls: 'overdue' };
-  if (diff > 1 && diff <= 7) return { text: 'через ' + diff + 'д', cls: 'future' };
-  if (diff < -1 && diff >= -30) return { text: '- ' + Math.abs(diff) + ' дн.', cls: 'overdue' };
-  if (diff < -30) {
-    const months = Math.round(Math.abs(diff) / 30);
-    return { text: '- ' + months + ' мес.', cls: 'overdue' };
-  }
-  // Будущее > 7 дней — показываем дату
   const day = String(d.getDate()).padStart(2,'0');
   const mon = String(d.getMonth()+1).padStart(2,'0');
-  return { text: day + '.' + mon, cls: 'future' };
+  const dateStr = day + '.' + mon;
+
+  if (diff === 0) return { text: 'сегодня', cls: 'today' };
+  if (diff === 1) return { text: 'завтра ' + dateStr, cls: 'future' };
+  if (diff === -1) return { text: 'вчера ' + dateStr, cls: 'overdue' };
+  if (diff > 1 && diff <= 7) return { text: 'через ' + diff + 'д ' + dateStr, cls: 'future' };
+  if (diff < -1 && diff >= -30) return { text: '- ' + Math.abs(diff) + ' дн. ' + dateStr, cls: 'overdue' };
+  if (diff < -30) {
+    const months = Math.round(Math.abs(diff) / 30);
+    return { text: '- ' + months + ' мес. ' + dateStr, cls: 'overdue' };
+  }
+  return { text: dateStr, cls: 'future' };
+}
+
+// Формат даты создания: 15.05 или 15.05.24 (если другой год)
+function formatCreatedShort(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const day = String(d.getDate()).padStart(2,'0');
+  const mon = String(d.getMonth()+1).padStart(2,'0');
+  const yr = d.getFullYear();
+  const curYr = new Date().getFullYear();
+  if (yr === curYr) return day + '.' + mon;
+  return day + '.' + mon + '.' + String(yr).slice(2);
 }
 
 // =================== BULK SELECTION ===================
@@ -2707,7 +2880,8 @@ async function bulkShiftDeadline(days) {
 // =================== LIST RENDER ===================
 function renderList() {
   const container = document.getElementById('viewListBody');
-  const filtered = tasks.filter(taskMatchesFilters);
+  const sf = listPrefs.statusFilter || {};
+  const filtered = tasks.filter(t => taskMatchesFilters(t) && sf[t.status || 'В работе'] !== false);
 
   // Группировка
   const groups = new Map();
@@ -2726,22 +2900,28 @@ function renderList() {
     groups.get(key).push(task);
   });
 
-  // Controls — sort + groupBy
+  // Controls: группировка + чекбоксы видимости статусов
+  const stChk = (status, label) => {
+    const on = sf[status] !== false;
+    return '<label class="list-status-check' + (on ? '' : ' off') + '"><input type="checkbox" data-status-filter="' + status + '"' + (on ? ' checked' : '') + '>' + label + '</label>';
+  };
+
   let html = '<div class="list-view">';
   html += '<div class="list-controls">' +
-    '<span>Группировать:</span>' +
-    '<select id="lst_groupBy">' +
-      '<option value="project"' + (groupBy === 'project' ? ' selected' : '') + '>По проекту</option>' +
-      '<option value="tech"' + (groupBy === 'tech' ? ' selected' : '') + '>По технарю</option>' +
-      '<option value="none"' + (groupBy === 'none' ? ' selected' : '') + '>Без группировки</option>' +
-    '</select>' +
-    '<span style="margin-left:10px;">Сортировка:</span>' +
-    '<select id="lst_sortBy">' +
-      '<option value="deadline"' + (listPrefs.sortBy === 'deadline' ? ' selected' : '') + '>По дедлайну</option>' +
-      '<option value="priority"' + (listPrefs.sortBy === 'priority' ? ' selected' : '') + '>По приоритету</option>' +
-      '<option value="status"' + (listPrefs.sortBy === 'status' ? ' selected' : '') + '>По статусу</option>' +
-      '<option value="created"' + (listPrefs.sortBy === 'created' ? ' selected' : '') + '>По дате создания</option>' +
-    '</select>' +
+    '<div class="list-controls-group">' +
+      '<span>Группировать:</span>' +
+      '<select id="lst_groupBy">' +
+        '<option value="project"' + (groupBy === 'project' ? ' selected' : '') + '>По проекту</option>' +
+        '<option value="tech"' + (groupBy === 'tech' ? ' selected' : '') + '>По технарю</option>' +
+        '<option value="none"' + (groupBy === 'none' ? ' selected' : '') + '>Без группировки</option>' +
+      '</select>' +
+    '</div>' +
+    '<div class="list-controls-group">' +
+      '<span>Показывать:</span>' +
+      stChk('В работе', 'В работе') +
+      stChk('Выполнено', 'Выполнено') +
+      stChk('Отменена', 'Отменено') +
+    '</div>' +
   '</div>';
 
   if (groups.size === 0) {
@@ -2763,7 +2943,7 @@ function renderList() {
     return a.localeCompare(b);
   });
 
-  // Bulk action bar
+  // Bulk bar
   html += '<div class="bulk-bar" id="bulkBar">' +
     '<span class="bulk-bar-count"><span id="bulkCount">0</span> выделено</span>' +
     '<button class="bulk-btn" data-bulk="done">✓ Выполнено</button>' +
@@ -2787,30 +2967,54 @@ function renderList() {
     '<button id="collapseAllBtn">свернуть все</button>' +
   '</div>';
 
-  // Comparator по выбранной сортировке
+  // Compараторы для каждой колонки
   const sortBy = listPrefs.sortBy || 'deadline';
+  const sortDir = listPrefs.sortDir || 'asc';
+  const dirMul = sortDir === 'desc' ? -1 : 1;
   const cmp = (a, b) => {
-    if (sortBy === 'priority') {
-      const r = { 'Высокий': 0, 'Средний': 1, 'Низкий': 2 };
-      const pa = r[a.priority] ?? 3;
-      const pb = r[b.priority] ?? 3;
-      if (pa !== pb) return pa - pb;
+    let r = 0;
+    if (sortBy === 'title') {
+      r = (a.title || '').localeCompare(b.title || '');
+    } else if (sortBy === 'priority') {
+      const pr = { 'Высокий': 0, 'Средний': 1, 'Низкий': 2 };
+      r = (pr[a.priority] ?? 3) - (pr[b.priority] ?? 3);
     } else if (sortBy === 'status') {
       const so = { 'В работе': 0, 'Выполнено': 1, 'Отменена': 2 };
-      const sa = so[a.status] ?? 3;
-      const sb = so[b.status] ?? 3;
-      if (sa !== sb) return sa - sb;
+      r = (so[a.status] ?? 3) - (so[b.status] ?? 3);
     } else if (sortBy === 'created') {
-      const ca = a.createdAt || '';
-      const cb = b.createdAt || '';
-      if (ca !== cb) return cb.localeCompare(ca); // новые сверху
+      r = (a.createdAt || '').localeCompare(b.createdAt || '');
+    } else if (sortBy === 'tech') {
+      const ta = getTech(a.techId)?.name || '';
+      const tb = getTech(b.techId)?.name || '';
+      r = ta.localeCompare(tb);
+    } else if (sortBy === 'project') {
+      r = (a.project || '').localeCompare(b.project || '');
+    } else {
+      // deadline по умолчанию: пустые в конце
+      if (a.deadline && b.deadline) r = a.deadline.localeCompare(b.deadline);
+      else if (a.deadline) r = -1;
+      else if (b.deadline) r = 1;
     }
-    // Default tie-breaker — дедлайн
-    if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
-    if (a.deadline) return -1;
-    if (b.deadline) return 1;
-    return 0;
+    return r * dirMul;
   };
+
+  // Кликабельный заголовок таблицы (общий)
+  function arrow(col) {
+    if (sortBy !== col) return '<span class="sort-arrow">↕</span>';
+    return '<span class="sort-arrow">' + (sortDir === 'asc' ? '↑' : '↓') + '</span>';
+  }
+  function activeCls(col) { return sortBy === col ? ' active' : ''; }
+
+  const headerRow = '<div class="list-head-row">' +
+    '<span></span>' +
+    '<span class="list-head-cell' + activeCls('title') + '" data-sort="title">Название ' + arrow('title') + '</span>' +
+    '<span class="list-head-cell' + activeCls('created') + '" data-sort="created">Создана ' + arrow('created') + '</span>' +
+    '<span class="list-head-cell' + activeCls('deadline') + '" data-sort="deadline">Дедлайн ' + arrow('deadline') + '</span>' +
+    '<span class="list-head-cell' + activeCls('priority') + '" data-sort="priority">Приоритет ' + arrow('priority') + '</span>' +
+    '<span class="list-head-cell' + activeCls('tech') + '" data-sort="tech">Исполнитель ' + arrow('tech') + '</span>' +
+    '<span class="list-head-cell' + activeCls('status') + '" data-sort="status">Статус ' + arrow('status') + '</span>' +
+    '<span class="list-head-cell' + activeCls('project') + '" data-sort="project">Проект ' + arrow('project') + '</span>' +
+  '</div>';
 
   sortedKeys.forEach(key => {
     const taskList = groups.get(key);
@@ -2840,7 +3044,6 @@ function renderList() {
         groupLabel = '<span class="list-group-name">' + escapeHtml(techId) + '</span>';
       }
     } else {
-      // project
       groupLabel = '<span class="list-group-name">#' + escapeHtml(key) + '</span>';
       const tech = findTechByProject(key);
       if (tech) {
@@ -2861,6 +3064,7 @@ function renderList() {
     html += '</div>';
 
     html += '<div class="list-group-body">';
+    html += headerRow;
 
     taskList.forEach(task => {
       const taskTech = getTech(task.techId);
@@ -2869,19 +3073,21 @@ function renderList() {
       const statusClsMap = { 'В работе': 'work', 'Выполнено': 'done', 'Отменена': 'cancel' };
       const statusCls = statusClsMap[task.status] || 'work';
       const dl = formatDeadlineList(task.deadline);
-      const prioMiniCls = { 'Высокий': 'h', 'Средний': 'm', 'Низкий': 'l' };
-      const prioMini = task.priority
-        ? '<span class="list-prio-mini ' + prioMiniCls[task.priority] + '">' + (task.priority === 'Высокий' ? '!!!' : task.priority === 'Средний' ? '!!' : '!') + '</span>'
-        : '';
+      const prioPillCls = { 'Высокий': 'h', 'Средний': 'm', 'Низкий': 'l' };
+      const prioCell = task.priority
+        ? '<span class="list-prio-pill ' + prioPillCls[task.priority] + '">' + escapeHtml(task.priority) + '</span>'
+        : '<span style="color:#b4b2a9">—</span>';
       const sk = selectionKey(task);
       const isSelected = selectedTasks.has(sk);
 
       html += '<div class="list-row ' + completedClass + ' ' + overdueClass + (isSelected ? ' selected' : '') + '" data-id="' + task.id + '" data-tech="' + task.techId + '" data-key="' + sk + '">';
       html += '<input type="checkbox" class="list-row-checkbox"' + (isSelected ? ' checked' : '') + '>';
-      html += '<span class="list-task">' + prioMini + escapeHtml(task.title) +
+      html += '<span class="list-task">' + escapeHtml(task.title) +
         (task.note ? ' <span class="task-tag note-marker" title="' + escapeHtml(task.note) + '">📝</span>' : '') +
         '</span>';
+      html += '<span class="list-cell-created">' + formatCreatedShort(task.createdAt) + '</span>';
       html += '<span><span class="list-deadline-pill ' + dl.cls + '">' + dl.text + '</span></span>';
+      html += '<span>' + prioCell + '</span>';
       html += '<span class="list-cell-tech">' + (taskTech
         ? '<span class="avatar" style="background:' + avatarColor(taskTech.name) + '">' + initials(taskTech.name) + '</span> ' + escapeHtml(taskTech.name)
         : '<span style="color:#b4b2a9">—</span>'
@@ -2907,8 +3113,31 @@ function renderList() {
 function attachListControls() {
   const gby = document.getElementById('lst_groupBy');
   if (gby) gby.addEventListener('change', e => { listPrefs.groupBy = e.target.value; saveListPrefs(); renderList(); });
-  const sby = document.getElementById('lst_sortBy');
-  if (sby) sby.addEventListener('change', e => { listPrefs.sortBy = e.target.value; saveListPrefs(); renderList(); });
+
+  // Чекбоксы видимости статусов
+  document.querySelectorAll('[data-status-filter]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (!listPrefs.statusFilter) listPrefs.statusFilter = {};
+      listPrefs.statusFilter[cb.dataset.statusFilter] = cb.checked;
+      saveListPrefs();
+      renderList();
+    });
+  });
+
+  // Клик по заголовку колонки — сортировка
+  document.querySelectorAll('.list-head-cell[data-sort]').forEach(h => {
+    h.addEventListener('click', () => {
+      const col = h.dataset.sort;
+      if (listPrefs.sortBy === col) {
+        listPrefs.sortDir = listPrefs.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        listPrefs.sortBy = col;
+        listPrefs.sortDir = 'asc';
+      }
+      saveListPrefs();
+      renderList();
+    });
+  });
 }
 
 function attachListHandlers(groups) {
@@ -3167,6 +3396,28 @@ document.getElementById('onbSkip').addEventListener('click', () => {
 });
 
 // =================== INIT ===================
+// Если ссылка содержит ?tech=Вова&url=https://... — настраиваем автоматически
+async function initFromUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  const techName = params.get('tech');
+  const techUrl = params.get('url');
+  if (!techName || !techUrl) return false;
+
+  // Уже добавлен с таким URL — просто запускаем
+  if (techs.find(t => t.url === techUrl)) return true;
+
+  // Добавляем тихо (без UI)
+  try {
+    const r = await apiGet(techUrl);
+    if (!r.ok) return false;
+    const projects = (r.projects && r.projects.length > 0) ? r.projects : [];
+    techs.push({ id: uid(), name: techName, url: techUrl, projects });
+    saveTechs();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 function updateVersionFooter() {
   const f = document.getElementById('footerVersion');
   if (!f) return;
@@ -3175,6 +3426,7 @@ function updateVersionFooter() {
     text += ' · скрипт v' + serverVersion;
     if (serverVersion !== VERSION) text += ' ⚠ несовпадение, обнови deployment';
   }
+  text += ' · by Артурыч';
   f.textContent = text;
 }
 
@@ -3185,10 +3437,45 @@ function initMain() {
   reloadTasks();
   quickAdd.focus();
   updateVersionFooter();
+  startAutoRefresh();
 }
 
-(function init() {
+let autoRefreshTimer = null;
+let lastAutoRefresh = 0;
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  // Раз в 45 секунд тихо обновляем (если вкладка видима)
+  autoRefreshTimer = setInterval(() => {
+    if (document.visibilityState === 'visible' && techs.length > 0) {
+      lastAutoRefresh = Date.now();
+      reloadTasks(true);
+    }
+  }, 45000);
+}
+
+// При возврате на вкладку — сразу обновить (но не чаще раза в 10 сек)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && techs.length > 0) {
+    if (Date.now() - lastAutoRefresh > 10000) {
+      lastAutoRefresh = Date.now();
+      reloadTasks(true);
+    }
+  }
+});
+
+// При фокусе окна тоже обновляем (полезно когда переключился из другого окна)
+window.addEventListener('focus', () => {
+  if (techs.length > 0 && Date.now() - lastAutoRefresh > 10000) {
+    lastAutoRefresh = Date.now();
+    reloadTasks(true);
+  }
+});
+
+(async function init() {
   loadTechs();
+  // Если ссылка с параметрами — тихо настраиваем технаря
+  await initFromUrlParams();
+
   if (techs.length === 0) {
     document.getElementById('onboardingApp').style.display = '';
   } else {
