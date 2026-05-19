@@ -1399,3 +1399,178 @@
     .modal { width: 100% !important; max-width: 100vw !important; border-radius: 0; }
     .modal-wide { max-width: 100vw !important; }
   }
+
+
+  /* ============ MULTI-ADD + RENAME (v1.6.0) ============ */
+  .ct-multi-head {
+    display: grid;
+    grid-template-columns: 1.6fr 1.2fr 0.9fr 0.9fr 1fr 32px;
+    gap: 8px;
+    padding: 4px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #8b8b85;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    margin-bottom: 6px;
+  }
+  .ct-multi-row {
+    display: grid;
+    grid-template-columns: 1.6fr 1.2fr 0.9fr 0.9fr 1fr 32px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .ct-multi-row .input,
+  .ct-multi-row select.input {
+    height: 34px;
+    font-size: 13px;
+    padding: 0 8px;
+  }
+  .ct-multi-row .ct-row-tech {
+    font-size: 12px;
+    color: #5f5e5a;
+    padding: 0 8px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    background: #faf9f5;
+    border-radius: 7px;
+    border: 1px solid rgba(0,0,0,0.06);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ct-multi-row .btn-x {
+    width: 32px;
+    height: 34px;
+    border-radius: 7px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.12);
+    color: #c0392b;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .ct-multi-row .btn-x:hover { background: #fcebeb; }
+  @media (max-width: 700px) {
+    .ct-multi-head { display: none; }
+    .ct-multi-row {
+      grid-template-columns: 1fr 1fr 32px;
+      grid-template-areas:
+        "title title btn"
+        "proj  proj  proj"
+        "tech  prio  dl";
+    }
+    .ct-multi-row .ct-row-title { grid-area: title; }
+    .ct-multi-row .ct-row-project { grid-area: proj; }
+    .ct-multi-row .ct-row-tech { grid-area: tech; }
+    .ct-multi-row .ct-row-priority { grid-area: prio; }
+    .ct-multi-row .ct-row-deadline { grid-area: dl; }
+    .ct-multi-row .btn-x { grid-area: btn; }
+  }
+
+  /* Project rename — карандашик + inline-инпут */
+  .btn-icon-mini {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.12);
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .btn-icon-mini:hover { background: #f1efe8; }
+  .proj-rename-input {
+    max-width: 200px;
+    height: 28px;
+  }
+  .proj-rename-save, .proj-rename-cancel {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+
+  /* ============ v1.6.1 fixes ============ */
+  /* Шире модалка создания задач (для мульти-add чтобы приоритет не прижимался) */
+  #createTaskModal .modal-wide { max-width: 1100px; }
+
+  /* Layout proj-item не wrap при rename mode */
+  .proj-item-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+  .proj-item { flex-wrap: nowrap; min-width: 0; }
+  .proj-rename-input {
+    height: 30px !important;
+    max-width: 180px !important;
+    flex-shrink: 1;
+    min-width: 80px;
+  }
+  .proj-rename-save, .proj-rename-cancel {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* Центрирование прочерков в Дедлайн и Приоритет колонках списка */
+  .list-row .cell-deadline,
+  .list-row .cell-prio {
+    text-align: center;
+  }
+  .list-row .cell-deadline > span,
+  .list-row .cell-prio > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .list-deadline-pill.none {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100%;
+  }
+
+
+  /* ============ v1.6.2 — Projects modal sortable header ============ */
+  .proj-head-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #8b8b85;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .proj-head-cell {
+    cursor: pointer;
+    user-select: none;
+  }
+  .proj-head-cell:first-child { flex: 0 0 200px; }
+  .proj-head-cell:nth-child(2) { flex: 1; }
+  .proj-head-cell:nth-child(3) { flex: 0 0 80px; }
+  .proj-head-cell:hover { color: #5f5e5a; }
+  .proj-head-cell.active { color: #d97757; }
+  .proj-item .proj-item-chip { flex: 0 0 200px; }
+
+
+  /* ============ v1.6.3 — Projects header без "Задач", счётчик прижат вправо ============ */
+  .proj-head-row {
+    /* теперь только 2 колонки + spacer */
+  }
+  .proj-head-cell:first-child { flex: 0 0 200px; }
+  .proj-head-cell:nth-child(2) { flex: 1; }
+  /* Row: count + ✎ + × прижаты к правому краю */
+  .proj-item .proj-item-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: #8b8b85;
+  }

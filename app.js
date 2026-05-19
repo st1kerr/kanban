@@ -1,5 +1,6 @@
 // =================== STATE ===================
-const VERSION = '1.5.1';
+const VERSION = '1.6.4';
+let _renameInProgress = false; // блокирует перезапись tech.projects autorefresh'ом во время rename
 const STORE_KEY = 'kanban-techs-v2';
 const FILTERS_KEY = 'kanban-view-filters-v1';
 const LISTPREFS_KEY = 'kanban-list-prefs-v1';
@@ -44,7 +45,10 @@ let listPrefs = {
   pinnedProjects: [],
   freeSort: false,
   taskOrder: [],
-  groupOrder: []
+  groupOrder: [],
+  // v1.6.2 — сортировка в окне Проекты
+  projectsSortBy: 'name',
+  projectsSortDir: 'asc'
 };
 try {
   const raw = localStorage.getItem(LISTPREFS_KEY);
@@ -488,6 +492,7 @@ function toast(msg, isError) {
 // =================== LOAD ===================
 async function reloadTasks(silent = false) {
   if (techs.length === 0) { tasks = []; renderActive(); return; }
+  if (_renameInProgress) { return; } // не дёргаем сервер пока идёт переименование, иначе rebuilt tasks затрут локальные правки
   if (!silent) setSync('syncing');
   const results = await Promise.allSettled(
     techs.map(t => apiGet(t.url).then(r => ({tech: t, data: r})))
@@ -501,7 +506,8 @@ async function reloadTasks(silent = false) {
       const tech = r.value.tech;
       if (r.value.data.version && !firstVersion) firstVersion = r.value.data.version;
       // Обновляем проекты из таблицы — источник правды в Sheets, не в localStorage
-      if (Array.isArray(r.value.data.projects)) {
+      // Во время rename НЕ перетираем — иначе старое имя может вернуться, если Sheets ещё не закоммитил updateProjects
+      if (!_renameInProgress && Array.isArray(r.value.data.projects)) {
         tech.projects = r.value.data.projects;
         techsUpdated = true;
       }
@@ -1020,7 +1026,13 @@ function renderFilters(view) {
       if (input.checked && idx === -1) f.priority.push(v);
       if (!input.checked && idx !== -1) f.priority.splice(idx, 1);
       saveFilters();
-      renderFilters(view);
+      // Не перерендериваем фильтры (dropdown должен остаться открытым) — только обновляем label
+      const trig = c.querySelector('#fd_priority_' + view + ' .fdrop-trigger');
+      if (trig) {
+        const cnt = f.priority.length;
+        trig.textContent = (cnt ? 'Приоритет: ' + f.priority.join(', ') : 'Приоритет') + ' ▾';
+        trig.classList.toggle('active', cnt > 0);
+      }
       renderActive();
     });
   });
@@ -1031,7 +1043,13 @@ function renderFilters(view) {
       if (input.checked && idx === -1) f.tech.push(v);
       if (!input.checked && idx !== -1) f.tech.splice(idx, 1);
       saveFilters();
-      renderFilters(view);
+      const trig = c.querySelector('#fd_tech_' + view + ' .fdrop-trigger');
+      if (trig) {
+        const cnt = f.tech.length;
+        const names = f.tech.map(id => (getTech(id)?.name || '?')).join(', ');
+        trig.textContent = (cnt ? 'Технарь: ' + names : 'Технарь') + ' ▾';
+        trig.classList.toggle('active', cnt > 0);
+      }
       renderActive();
     });
   });
@@ -1042,7 +1060,12 @@ function renderFilters(view) {
       if (input.checked && idx === -1) f.project.push(v);
       if (!input.checked && idx !== -1) f.project.splice(idx, 1);
       saveFilters();
-      renderFilters(view);
+      const trig = c.querySelector('#fd_project_' + view + ' .fdrop-trigger');
+      if (trig) {
+        const cnt = f.project.length;
+        trig.textContent = (cnt ? 'Проект (' + cnt + ')' : 'Проект') + ' ▾';
+        trig.classList.toggle('active', cnt > 0);
+      }
       renderActive();
     });
   });
@@ -1284,24 +1307,159 @@ function renderProjectsModal() {
     list.innerHTML = '<div class="help-block">Пока нет проектов. Добавь выше.</div>';
     return;
   }
-  all.sort((a, b) => a.name.localeCompare(b.name));
-  list.innerHTML = all.map(p => {
+  // Сортировка
+  const sortBy = listPrefs.projectsSortBy || 'name';
+  const sortDir = listPrefs.projectsSortDir || 'asc';
+  const dirMul = sortDir === 'desc' ? -1 : 1;
+  all.sort((a, b) => {
+    let r = 0;
+    if (sortBy === 'tech') {
+      const an = a.techs.map(t => t.name).join(', ');
+      const bn = b.techs.map(t => t.name).join(', ');
+      r = an.localeCompare(bn);
+    } else {
+      r = a.name.localeCompare(b.name);
+    }
+    return r * dirMul;
+  });
+  // Стрелка-индикатор активной сортировки
+  const arrow = key => sortBy === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
+  // Header row — только Название и Исполнитель
+  let html = '<div class="proj-head-row">';
+  html += '<span class="proj-head-cell' + (sortBy === 'name' ? ' active' : '') + '" data-psort="name">Название' + arrow('name') + '</span>';
+  html += '<span class="proj-head-cell' + (sortBy === 'tech' ? ' active' : '') + '" data-psort="tech">Исполнитель' + arrow('tech') + '</span>';
+  html += '</div>';
+  html += all.map(p => {
     const count = tasks.filter(t => t.project === p.name).length;
     const techsHtml = p.techs.map(t =>
       '<span class="proj-item-tech"><span class="avatar" style="width:18px;height:18px;font-size:9px;background:' + avatarColor(t.name) + '">' + initials(t.name) + '</span> ' + escapeHtml(t.name) + '</span>'
     ).join(', ');
-    return '<div class="proj-item">' +
-      projectChipHtml(p.name, {style:'font-size:13px;padding:3px 9px;'}) +
-      '<span class="proj-item-name"></span>' +
+    return '<div class="proj-item" data-proj="' + escapeHtml(p.name) + '">' +
+      '<span class="proj-item-chip">' + projectChipHtml(p.name, {style:'font-size:13px;padding:3px 9px;'}) + '</span>' +
       '<span>' + techsHtml + '</span>' +
       '<span class="proj-item-count">' + count + ' задач</span>' +
+      '<button class="btn-icon-mini" data-rename="' + escapeHtml(p.name) + '" title="Переименовать">✎</button>' +
       '<button class="btn btn-small btn-danger" data-del="' + escapeHtml(p.name) + '">×</button>' +
     '</div>';
   }).join('');
+  list.innerHTML = html;
+
+  // Sort header clicks
+  list.querySelectorAll('[data-psort]').forEach(h => {
+    h.addEventListener('click', () => {
+      const key = h.dataset.psort;
+      if (listPrefs.projectsSortBy === key) {
+        listPrefs.projectsSortDir = listPrefs.projectsSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        listPrefs.projectsSortBy = key;
+        listPrefs.projectsSortDir = 'asc';
+      }
+      saveListPrefs();
+      renderProjectsModal();
+    });
+  });
 
   list.querySelectorAll('[data-del]').forEach(b => {
     b.addEventListener('click', () => deleteProject(b.dataset.del));
   });
+  list.querySelectorAll('[data-rename]').forEach(b => {
+    b.addEventListener('click', () => startRenameProject(b.dataset.rename));
+  });
+}
+
+// Inline rename UI
+function startRenameProject(oldName) {
+  const row = document.querySelector('.proj-item[data-proj="' + CSS.escape(oldName) + '"]');
+  if (!row) return;
+  const chipCell = row.querySelector('.proj-item-chip');
+  if (!chipCell) return;
+  // Заменяем плашку на инпут с двумя кнопками
+  chipCell.innerHTML =
+    '<input type="text" class="input proj-rename-input" value="' + escapeHtml(oldName) + '" style="height:28px;font-size:13px;max-width:200px;">' +
+    '<button class="btn btn-small btn-primary proj-rename-save">✓</button>' +
+    '<button class="btn btn-small proj-rename-cancel">×</button>';
+  const inp = chipCell.querySelector('.proj-rename-input');
+  inp.focus();
+  inp.select();
+  chipCell.querySelector('.proj-rename-cancel').addEventListener('click', renderProjectsModal);
+  chipCell.querySelector('.proj-rename-save').addEventListener('click', () => commitRenameProject(oldName, inp.value.trim()));
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') commitRenameProject(oldName, inp.value.trim());
+    if (e.key === 'Escape') renderProjectsModal();
+  });
+}
+
+async function commitRenameProject(oldName, newName) {
+  if (!newName || newName === oldName) { renderProjectsModal(); return; }
+  const existing = new Set();
+  techs.forEach(t => (t.projects || []).forEach(p => existing.add(p)));
+  tasks.forEach(t => { if (t.project) existing.add(t.project); });
+  if (existing.has(newName)) {
+    toast('Проект «' + newName + '» уже существует', true);
+    return;
+  }
+  // СРАЗУ скрываем inline-input — показываем "обновляется..."
+  const row = document.querySelector('.proj-item[data-proj="' + CSS.escape(oldName) + '"]');
+  if (row) {
+    const chipCell = row.querySelector('.proj-item-chip');
+    if (chipCell) chipCell.innerHTML = '<span style="font-size:12px;color:#8b8b85;font-style:italic;">обновляется…</span>';
+  }
+  _renameInProgress = true;
+  setSync('syncing');
+  try {
+    // 1) Обновляем справочники у всех затронутых технарей — параллельно
+    const affectedTechs = techs.filter(t => (t.projects || []).includes(oldName));
+    affectedTechs.forEach(t => { t.projects = t.projects.map(p => p === oldName ? newName : p); });
+    saveTechs();
+    const projResults = await Promise.allSettled(affectedTechs.map(tech =>
+      apiPost(tech.url, { action: 'updateProjects', projects: tech.projects })
+    ));
+    const projFailed = projResults.filter(r => r.status !== 'fulfilled' || !r.value.ok).length;
+    if (projFailed > 0) throw new Error('updateProjects: ' + projFailed + ' не удалось');
+
+    // 2) Обновляем все задачи параллельно
+    const affectedTasks = tasks.filter(t => t.project === oldName);
+    affectedTasks.forEach(t => { t.project = newName; });
+    const taskResults = await Promise.allSettled(affectedTasks.map(t => {
+      const tech = getTech(t.techId);
+      if (!tech) return Promise.resolve({ ok: false, error: 'no tech' });
+      return apiPost(tech.url, { action: 'update', task: t });
+    }));
+    const taskFailed = taskResults.filter(r => r.status !== 'fulfilled' || !r.value.ok).length;
+    // 3) Подчищаем все локальные ссылки на старое имя проекта
+    if (listPrefs.pinnedProjects) {
+      listPrefs.pinnedProjects = listPrefs.pinnedProjects.map(p => p === oldName ? newName : p);
+    }
+    if (listPrefs.groupOrder) {
+      listPrefs.groupOrder = listPrefs.groupOrder.map(g => g === oldName ? newName : g);
+    }
+    saveListPrefs();
+    if (customColors && customColors.projects && customColors.projects[oldName]) {
+      customColors.projects[newName] = customColors.projects[oldName];
+      delete customColors.projects[oldName];
+      saveCustomColors();
+      applyCustomColorStyles();
+    }
+    ['board','list'].forEach(v => {
+      if (viewFilters[v] && Array.isArray(viewFilters[v].project)) {
+        viewFilters[v].project = viewFilters[v].project.map(p => p === oldName ? newName : p);
+      }
+    });
+    saveFilters();
+    setSync('idle');
+    toast('Переименовано: ' + (affectedTasks.length - taskFailed) + ' задач' + (taskFailed ? ', ошибок: ' + taskFailed : ''));
+    renderProjectsModal();
+    renderFilters && renderFilters('board');
+    renderFilters && renderFilters('list');
+    renderActive();
+  } catch (err) {
+    setSync('error');
+    toast('Ошибка переименования: ' + err.message, true);
+    renderProjectsModal();
+  } finally {
+    // Снимаем флаг через 3 сек — даём Sheets закоммитить updateProjects, чтобы следующий autorefresh уже видел чистое состояние
+    setTimeout(() => { _renameInProgress = false; }, 3000);
+  }
 }
 
 async function deleteProject(projectName) {
@@ -1618,7 +1776,7 @@ document.getElementById('addTech').addEventListener('click', async () => {
 });
 
 document.getElementById('refreshBtn').addEventListener('click', () => reloadTasks());
-document.getElementById('newTaskBtn').addEventListener('click', () => openNewTaskModal());
+document.getElementById('newTaskBtn').addEventListener('click', () => openCreateTaskModal());
 
 // =================== WEEKLY REPORT ===================
 function generateWeeklyReport() {
@@ -1686,7 +1844,7 @@ function generateWeeklyReport() {
       .sort();
 
     projects.forEach((project, pi) => {
-      if (pi > 0) out += '\n';
+      if (pi > 0) out += '\n· · · · · · · · · · · · · · · · ·\n\n';
       const g = techMap.get(project);
       out += project + '\n';
 
@@ -2718,7 +2876,7 @@ function startAutoRefresh() {
 
 // При возврате на вкладку — сразу обновить (но не чаще раза в 10 сек)
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && techs.length > 0) {
+  if (document.visibilityState === 'visible' && techs.length > 0 && !_renameInProgress) {
     if (Date.now() - lastAutoRefresh > 10000) {
       lastAutoRefresh = Date.now();
       reloadTasks(true);
@@ -2728,10 +2886,191 @@ document.addEventListener('visibilitychange', () => {
 
 // При фокусе окна тоже обновляем (полезно когда переключился из другого окна)
 window.addEventListener('focus', () => {
-  if (techs.length > 0 && Date.now() - lastAutoRefresh > 10000) {
+  if (techs.length > 0 && !_renameInProgress && Date.now() - lastAutoRefresh > 10000) {
     lastAutoRefresh = Date.now();
     reloadTasks(true);
   }
+});
+
+
+
+// =================== CREATE TASK MODAL (v1.6.0) ===================
+function openCreateTaskModal() {
+  const m = document.getElementById('createTaskModal');
+  if (!m) { openNewTaskModal(); return; } // fallback
+  // Reset to single-tab
+  document.querySelectorAll('#createTaskModal .tab').forEach(t => t.classList.toggle('active', t.dataset.createTab === 'single'));
+  document.querySelectorAll('#createTaskModal .tab-content').forEach(c => c.classList.toggle('active', c.id === 'ct-single'));
+  ctRenderSingle();
+  ctRenderMultiInitial();
+  m.classList.add('active');
+  setTimeout(() => document.getElementById('ctSingleTitle')?.focus(), 50);
+}
+
+// Tab switching
+document.querySelectorAll('#createTaskModal .tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('#createTaskModal .tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('#createTaskModal .tab-content').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('ct-' + t.dataset.createTab).classList.add('active');
+  });
+});
+document.getElementById('ctCancel')?.addEventListener('click', () => document.getElementById('createTaskModal').classList.remove('active'));
+
+// ----- SINGLE -----
+function ctRenderSingle() {
+  // Tech select
+  const techSel = document.getElementById('ctSingleTech');
+  techSel.innerHTML = '<option value="">— выбери —</option>' + techs.map(t => '<option value="' + t.id + '">' + escapeHtml(t.name) + '</option>').join('');
+  // Project select — все известные
+  const allP = new Set();
+  techs.forEach(t => t.projects.forEach(p => allP.add(p)));
+  tasks.forEach(t => { if (t.project) allP.add(t.project); });
+  const projSel = document.getElementById('ctSingleProject');
+  projSel.innerHTML = '<option value="">— нет —</option>' +
+    Array.from(allP).sort().map(p => '<option value="' + escapeHtml(p) + '">' + escapeHtml(p) + '</option>').join('');
+  // При выборе проекта — авто-подставить тех
+  projSel.onchange = () => {
+    const t = findTechByProject(projSel.value);
+    if (t) techSel.value = t.id;
+  };
+  // Reset поля
+  document.getElementById('ctSingleTitle').value = '';
+  document.getElementById('ctSingleDeadline').value = '';
+  document.getElementById('ctSingleNote').value = '';
+  document.querySelectorAll('#ct-single .priority-select .filter-chip').forEach(b => b.classList.remove('active'));
+}
+let ctSinglePriority = '';
+document.querySelectorAll('#ct-single .priority-select .filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#ct-single .priority-select .filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    ctSinglePriority = chip.dataset.prio;
+  });
+});
+
+// ----- MULTI -----
+function ctRenderMultiInitial() {
+  const rows = document.getElementById('ctMultiRows');
+  rows.innerHTML = '';
+  ctAddMultiRow();
+  ctAddMultiRow();
+  ctAddMultiRow();
+}
+function ctAddMultiRow() {
+  const rows = document.getElementById('ctMultiRows');
+  const allP = new Set();
+  techs.forEach(t => t.projects.forEach(p => allP.add(p)));
+  tasks.forEach(t => { if (t.project) allP.add(t.project); });
+  const projOpts = '<option value="">— проект —</option>' +
+    Array.from(allP).sort().map(p => '<option value="' + escapeHtml(p) + '">' + escapeHtml(p) + '</option>').join('');
+  const row = document.createElement('div');
+  row.className = 'ct-multi-row';
+  row.innerHTML =
+    '<input type="text" class="input ct-row-title" placeholder="Задача">' +
+    '<select class="input ct-row-project">' + projOpts + '</select>' +
+    '<span class="ct-row-tech" title="Технарь подставится автоматически">—</span>' +
+    '<select class="input ct-row-priority">' +
+      '<option value="">приоритет</option>' +
+      '<option value="Низкий">Низкий</option>' +
+      '<option value="Средний">Средний</option>' +
+      '<option value="Высокий">Высокий</option>' +
+    '</select>' +
+    '<input type="date" class="input ct-row-deadline">' +
+    '<button class="btn-x" title="Удалить строку">✕</button>';
+  rows.appendChild(row);
+  // Project change → auto tech
+  row.querySelector('.ct-row-project').addEventListener('change', e => {
+    const t = findTechByProject(e.target.value);
+    row.querySelector('.ct-row-tech').textContent = t ? t.name : '—';
+    row.dataset.techId = t ? t.id : '';
+  });
+  row.querySelector('.btn-x').addEventListener('click', () => row.remove());
+}
+document.getElementById('ctAddRow')?.addEventListener('click', ctAddMultiRow);
+
+// ----- SAVE -----
+document.getElementById('ctSave')?.addEventListener('click', async () => {
+  const activeTab = document.querySelector('#createTaskModal .tab.active')?.dataset.createTab;
+  if (activeTab === 'single') {
+    const title = document.getElementById('ctSingleTitle').value.trim();
+    if (!title) { toast('Введи название', true); return; }
+    const techId = document.getElementById('ctSingleTech').value;
+    const project = document.getElementById('ctSingleProject').value;
+    const deadline = document.getElementById('ctSingleDeadline').value;
+    const note = document.getElementById('ctSingleNote').value;
+    const priority = ctSinglePriority || '';
+    if (!techId) { toast('Выбери технаря', true); return; }
+    await createTask({
+      title, project, priority, deadline, note,
+      status: 'В работе', createdAt: new Date().toISOString().slice(0,10), completedAt: ''
+    }, techId);
+    document.getElementById('createTaskModal').classList.remove('active');
+    return;
+  }
+  // MULTI
+  const rows = Array.from(document.querySelectorAll('#ctMultiRows .ct-multi-row'));
+  const toCreate = [];
+  for (const row of rows) {
+    const title = row.querySelector('.ct-row-title').value.trim();
+    if (!title) continue;
+    const project = row.querySelector('.ct-row-project').value;
+    const techId = row.dataset.techId || (findTechByProject(project)?.id);
+    if (!techId) { toast('Не определён технарь для «' + title + '» (выбери проект)', true); return; }
+    toCreate.push({
+      techId,
+      data: {
+        title,
+        project,
+        priority: row.querySelector('.ct-row-priority').value || '',
+        deadline: row.querySelector('.ct-row-deadline').value || '',
+        note: '',
+        status: 'В работе',
+        createdAt: new Date().toISOString().slice(0,10),
+        completedAt: ''
+      }
+    });
+  }
+  if (toCreate.length === 0) { toast('Нет задач для создания', true); return; }
+  setSync('syncing');
+  // Параллельно — один сетевой раунд вместо N
+  const results = await Promise.allSettled(toCreate.map(item => {
+    const tech = getTech(item.techId);
+    return apiPost(tech.url, { action: 'add', task: item.data }).then(res => ({ res, item }));
+  }));
+  let created = 0, failed = 0;
+  const projAdditions = new Map(); // techId -> Set новых проектов
+  results.forEach(r => {
+    if (r.status === 'fulfilled' && r.value.res.ok) {
+      const { res, item } = r.value;
+      tasks.push({ ...item.data, id: res.id, techId: item.techId, synced: true });
+      const tech = getTech(item.techId);
+      if (item.data.project && !tech.projects.includes(item.data.project)) {
+        if (!projAdditions.has(item.techId)) projAdditions.set(item.techId, new Set());
+        projAdditions.get(item.techId).add(item.data.project);
+      }
+      created++;
+    } else {
+      failed++;
+    }
+  });
+  // Обновляем справочники проектов (один раз на техника, тоже параллельно)
+  if (projAdditions.size > 0) {
+    projAdditions.forEach((newProjs, techId) => {
+      const tech = getTech(techId);
+      newProjs.forEach(p => { if (!tech.projects.includes(p)) tech.projects.push(p); });
+    });
+    saveTechs();
+    Promise.allSettled(Array.from(projAdditions.keys()).map(techId => {
+      const tech = getTech(techId);
+      return apiPost(tech.url, { action: 'updateProjects', projects: tech.projects });
+    })).catch(() => {});
+  }
+  setSync('idle');
+  renderActive();
+  toast('Создано: ' + created + (failed ? ', ошибок: ' + failed : ''));
+  document.getElementById('createTaskModal').classList.remove('active');
 });
 
 (async function init() {

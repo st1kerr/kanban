@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Канбан</title>
-<link rel="stylesheet" href="styles.css?v=1.5.1">
+<link rel="stylesheet" href="styles.css?v=1.6.4">
 </head>
 <body>
 
@@ -103,6 +103,68 @@
   <div id="viewStats" style="display:none;" class="stats"></div>
 
   <div class="footer-version" id="footerVersion"></div>
+</div>
+
+<!-- CREATE TASK MODAL (v1.6.0) -->
+<div class="modal-bg" id="createTaskModal">
+  <div class="modal modal-wide">
+    <h2>Создать задачу</h2>
+    <div class="tabs">
+      <button class="tab active" data-create-tab="single">Одна задача</button>
+      <button class="tab" data-create-tab="multi">Несколько задач</button>
+    </div>
+    <div class="tab-content active" id="ct-single">
+      <div class="modal-section">
+        <div class="modal-section-title">Задача</div>
+        <input type="text" class="input" id="ctSingleTitle">
+      </div>
+      <div class="row-grid-2">
+        <div class="modal-section">
+          <div class="modal-section-title">Проект</div>
+          <select class="input" id="ctSingleProject"></select>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-title">Технарь</div>
+          <select class="input" id="ctSingleTech"></select>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Приоритет</div>
+        <div class="priority-select">
+          <button class="filter-chip prio-l" data-prio="Низкий">Низкий</button>
+          <button class="filter-chip prio-m" data-prio="Средний">Средний</button>
+          <button class="filter-chip prio-h" data-prio="Высокий">Высокий</button>
+        </div>
+      </div>
+      <div class="row-grid-2">
+        <div class="modal-section">
+          <div class="modal-section-title">Дедлайн</div>
+          <input type="date" class="input" id="ctSingleDeadline">
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-title">Примечание</div>
+          <textarea class="input" id="ctSingleNote" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" id="ct-multi">
+      <p style="font-size:12px; color:#5f5e5a; margin:0 0 8px;">Технарь подставится автоматически по выбранному проекту. Можно добавлять и удалять строки.</p>
+      <div class="ct-multi-head">
+        <span>Задача</span>
+        <span>Проект</span>
+        <span>Технарь</span>
+        <span>Приоритет</span>
+        <span>Дедлайн</span>
+        <span></span>
+      </div>
+      <div id="ctMultiRows"></div>
+      <button class="btn" id="ctAddRow" style="margin-top:8px;">+ Добавить строку</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="ctCancel">Отмена</button>
+      <button class="btn btn-primary" id="ctSave">Сохранить</button>
+    </div>
+  </div>
 </div>
 
 <!-- TASK MODAL -->
@@ -256,6 +318,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app.js?v=1.5.1" defer></script>
+<script src="app.js?v=1.6.4" defer></script>
 </body>
 </html>
